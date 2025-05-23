@@ -147,6 +147,14 @@ theorem mul_inv_cancel (a : G) : a * a⁻¹ = 1 :=
     _ = 1 := by
       rw [inv_mul_cancel]
 
+-- Alternative way of proving the theorem above
+example (a : G) : a * a⁻¹ = 1 := by
+  have h {x : G} : x * x = x → x = 1 := by
+    intro h'
+    rw [← one_mul x, ← inv_mul_cancel x, mul_assoc, h']
+  apply h
+  rw [mul_assoc, ← mul_assoc a⁻¹, inv_mul_cancel, one_mul]
+
 theorem mul_one (a : G) : a * 1 = a :=
   calc
     a * 1 = a * a⁻¹ * a := by
