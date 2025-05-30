@@ -176,7 +176,9 @@ example (x : ℕ) : x ∈ (univ : Set ℕ) :=
   trivial
 
 example : { n | Nat.Prime n } ∩ { n | n > 2 } ⊆ { n | ¬Even n } := by
-  sorry
+  rintro x ⟨h, h'⟩
+  simp at *
+  apply Nat.Prime.odd_of_ne_two h (ne_comm.mp (ne_of_lt h'))
 
 #print Prime
 
@@ -212,10 +214,12 @@ section
 variable (ssubt : s ⊆ t)
 
 example (h₀ : ∀ x ∈ t, ¬Even x) (h₁ : ∀ x ∈ t, Prime x) : ∀ x ∈ s, ¬Even x ∧ Prime x := by
-  sorry
+  rintro x xs
+  exact ⟨h₀ x (ssubt xs), h₁ x (ssubt xs)⟩
 
 example (h : ∃ x ∈ s, ¬Even x ∧ Prime x) : ∃ x ∈ t, Prime x := by
-  sorry
+  rcases h with ⟨x, xs, _, prime_x⟩
+  use x, (ssubt xs)
 
 end
 
@@ -254,7 +258,22 @@ example : (⋂ i, A i ∩ B i) = (⋂ i, A i) ∩ ⋂ i, B i := by
 
 
 example : (s ∪ ⋂ i, A i) = ⋂ i, A i ∪ s := by
-  sorry
+  ext x
+  simp only [mem_union, mem_iInter]
+  constructor
+  . rintro (xs | xai)
+    . intro i
+      exact Or.inr xs
+    . intro i
+      exact Or.inl (xai i)
+  . intro h
+    by_cases xs : x ∈ s
+    . exact Or.inl xs
+    . right
+      intro i
+      rcases h i with xai | xs
+      . assumption
+      . contradiction
 
 def primes : Set ℕ :=
   { x | Nat.Prime x }
@@ -275,7 +294,12 @@ example : (⋂ p ∈ primes, { x | ¬p ∣ x }) ⊆ { x | x = 1 } := by
   apply Nat.exists_prime_and_dvd
 
 example : (⋃ p ∈ primes, { x | x ≤ p }) = univ := by
-  sorry
+  apply eq_univ_of_forall
+  intro x
+  simp
+  rcases Nat.exists_infinite_primes x with ⟨p, ⟨xp, pp⟩⟩
+  use p
+  exact ⟨pp, xp⟩
 
 end
 
