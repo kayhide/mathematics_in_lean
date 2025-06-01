@@ -77,28 +77,59 @@ example : f ⁻¹' (u ∪ v) = f ⁻¹' u ∪ f ⁻¹' v := by
     . exact Or.inr xfv
 
 example : f '' (s ∩ t) ⊆ f '' s ∩ f '' t := by
-  sorry
+  rintro y ⟨x, ⟨⟨xs, xt⟩, rfl⟩⟩
+  use ⟨x, ⟨xs, rfl⟩⟩, x
 
 example (h : Injective f) : f '' s ∩ f '' t ⊆ f '' (s ∩ t) := by
-  sorry
+  rintro y ⟨yfs, yft⟩
+  rw [Injective] at h
+  rcases yfs with ⟨x, xs, rfl⟩
+  rcases yft with ⟨x', x't, fx'fx⟩
+  rcases h fx'fx with rfl
+  use x', ⟨xs, x't⟩
 
 example : f '' s \ f '' t ⊆ f '' (s \ t) := by
-  sorry
+  rintro y ⟨⟨x, xs, rfl⟩, ynft⟩
+  use x
+  constructor
+  . constructor
+    . exact xs
+    . intro xt
+      apply ynft
+      use x
+  . rfl
 
 example : f ⁻¹' u \ f ⁻¹' v ⊆ f ⁻¹' (u \ v) := by
-  sorry
+  rintro x ⟨xfu, xnfv⟩
+  use xfu, xnfv
 
 example : f '' s ∩ v = f '' (s ∩ f ⁻¹' v) := by
-  sorry
+  apply Subset.antisymm
+  . rintro y ⟨yfs, yv⟩
+    rcases yfs with ⟨x, xs, rfl⟩
+    use x
+    constructor
+    . exact ⟨xs, yv⟩
+    . rfl
+  . rintro y ⟨x, ⟨xs, xfv⟩, rfl⟩
+    use ⟨x, ⟨xs, rfl⟩⟩, xfv
 
 example : f '' (s ∩ f ⁻¹' u) ⊆ f '' s ∩ u := by
-  sorry
+  rintro y ⟨x, ⟨⟨xs, xfu⟩, rfl⟩⟩
+  use ⟨x, ⟨xs, rfl⟩⟩, xfu
 
 example : s ∩ f ⁻¹' u ⊆ f ⁻¹' (f '' s ∩ u) := by
-  sorry
+  rintro x ⟨xs, xfu⟩
+  constructor
+  . use x, xs
+  . exact xfu
 
 example : s ∪ f ⁻¹' u ⊆ f ⁻¹' (f '' s ∪ u) := by
-  sorry
+  rintro x (xs | xfu)
+  . left
+    use x, xs
+  . right
+    exact xfu
 
 variable {I : Type*} (A : I → Set α) (B : I → Set β)
 
