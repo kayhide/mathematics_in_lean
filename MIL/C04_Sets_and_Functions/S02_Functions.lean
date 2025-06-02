@@ -134,19 +134,69 @@ example : s ∪ f ⁻¹' u ⊆ f ⁻¹' (f '' s ∪ u) := by
 variable {I : Type*} (A : I → Set α) (B : I → Set β)
 
 example : (f '' ⋃ i, A i) = ⋃ i, f '' A i := by
-  sorry
+  ext y
+  constructor
+  . rintro ⟨x, xmem, rfl⟩
+    rcases xmem with ⟨xset, ⟨xsetmem, xmem⟩⟩
+    rcases xsetmem with ⟨i, rfl⟩
+    simp at xmem
+    simp
+    use i, x, xmem
+  . rintro ⟨yset, ysetmem, ymem⟩
+    simp at ysetmem
+    rcases ysetmem with ⟨i, rfl⟩
+    rcases ymem with ⟨x, xmem, rfl⟩
+    simp
+    use x, ⟨i, xmem⟩
 
 example : (f '' ⋂ i, A i) ⊆ ⋂ i, f '' A i := by
-  sorry
+  intro y ⟨x, xmem, h⟩
+  rcases h with rfl
+  simp at xmem
+  simp
+  intro i
+  use x, (xmem i)
 
 example (i : I) (injf : Injective f) : (⋂ i, f '' A i) ⊆ f '' ⋂ i, A i := by
-  sorry
+  intro y h
+  simp at h
+  simp
+  rcases h i with ⟨x, xmem, rfl⟩
+  use x
+  constructor
+  . intro j
+    rcases h j with ⟨x', x'mem, h'⟩
+    rcases injf h' with rfl
+    exact x'mem
+  . rfl
 
 example : (f ⁻¹' ⋃ i, B i) = ⋃ i, f ⁻¹' B i := by
-  sorry
+  ext x
+  constructor
+  . rintro ⟨yset, ysetmem, ymem⟩
+    simp at ysetmem
+    rcases ysetmem with ⟨i, rfl⟩
+    simp
+    use i
+  . rintro ⟨xset, xsetmem, xmem⟩
+    simp at xsetmem
+    rcases xsetmem with ⟨i, rfl⟩
+    simp
+    use i, xmem
 
 example : (f ⁻¹' ⋂ i, B i) = ⋂ i, f ⁻¹' B i := by
-  sorry
+  ext x
+  constructor
+  . intro xmem
+    simp at xmem
+    simp
+    intro i
+    exact xmem i
+  . intro xmem
+    simp at xmem
+    simp
+    intro i
+    exact xmem i
 
 example : InjOn f s ↔ ∀ x₁ ∈ s, ∀ x₂ ∈ s, f x₁ = f x₂ → x₁ = x₂ :=
   Iff.refl _
@@ -176,16 +226,45 @@ example : range exp = { y | y > 0 } := by
   rw [exp_log ypos]
 
 example : InjOn sqrt { x | x ≥ 0 } := by
-  sorry
+  intro x xnonneg y ynonneg
+  intro h
+  calc
+    x = √x ^ 2 := by rw [sq_sqrt xnonneg]
+    _ = √y ^ 2 := by rw [h]
+    _ = y := by rw [sq_sqrt ynonneg]
 
 example : InjOn (fun x ↦ x ^ 2) { x : ℝ | x ≥ 0 } := by
-  sorry
+  intro x xnonneg y ynonneg
+  intro h
+  simp at h
+  calc
+    x = √ (x ^ 2) := by rw [sqrt_sq xnonneg]
+    _ = √ (y ^ 2) := by rw [h]
+    _ = y := by rw [sqrt_sq ynonneg]
 
 example : sqrt '' { x | x ≥ 0 } = { y | y ≥ 0 } := by
-  sorry
+  ext y
+  constructor
+  . rintro ⟨x, xmem, rfl⟩
+    simp at xmem
+    simp
+  . intro ymem
+    simp at ymem
+    simp
+    use y ^ 2
+    exact ⟨pow_two_nonneg y, sqrt_sq ymem⟩
 
 example : (range fun x ↦ x ^ 2) = { y : ℝ | y ≥ 0 } := by
-  sorry
+  ext y
+  constructor
+  . rintro ⟨x, rfl⟩
+    simp
+    exact pow_two_nonneg x
+  . intros ymem
+    simp at ymem
+    simp
+    use √y
+    apply sq_sqrt ymem
 
 end
 
@@ -216,11 +295,35 @@ variable (f : α → β)
 
 open Function
 
-example : Injective f ↔ LeftInverse (inverse f) f :=
-  sorry
+example : Injective f ↔ LeftInverse (inverse f) f := by
+  constructor
+  . intro injf
+    rw [LeftInverse]
+    intro x
+    have h : ∃y, f y = f x := ⟨x, rfl⟩
+    rw [inverse, dif_pos h]
+    exact injf (Classical.choose_spec h)
+  . intro linv
+    rw [LeftInverse] at linv
+    intro x y h
+    rw [← linv x, ← linv y, h]
 
-example : Surjective f ↔ RightInverse (inverse f) f :=
-  sorry
+example : Surjective f ↔ RightInverse (inverse f) f := by
+  constructor
+  . intro surjf
+    rw [RightInverse, LeftInverse]
+    intro y
+    rw [Surjective] at surjf
+    rcases surjf y with ⟨x, rfl⟩
+    have h : ∃z, f z = f x := ⟨x, rfl⟩
+    rw [inverse, dif_pos h]
+    exact Classical.choose_spec h
+  . intro rinv
+    rw [RightInverse, LeftInverse] at rinv
+    rw [Surjective]
+    intro y
+    rw [← rinv y]
+    use inverse f y
 
 end
 
@@ -236,10 +339,8 @@ theorem Cantor : ∀ f : α → Set α, ¬Surjective f := by
     intro h'
     have : j ∉ f j := by rwa [h] at h'
     contradiction
-  have h₂ : j ∈ S
-  sorry
-  have h₃ : j ∉ S
-  sorry
+  have h₂ : j ∈ S := h₁
+  have h₃ : j ∉ S := by rwa [h] at h₁
   contradiction
 
 -- COMMENTS: TODO: improve this
