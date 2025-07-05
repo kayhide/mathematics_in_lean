@@ -221,24 +221,15 @@ theorem exists_prime_factor_mod_4_eq_3 {n : Nat} (h : n % 4 = 3) :
     . use m
     have := ih m mltn h1 mp
     rcases this with ⟨p, pp, pdvdm, h⟩
-    use p
     have : p ∣ n := dvd_trans pdvdm mdvdn
-    exact ⟨pp, this, h⟩
-  . by_cases nmp : (n / m).Prime
-    . use n / m
-      have : (n / m) ∣ n := Nat.div_dvd_of_dvd mdvdn
-      exact ⟨nmp, this, h1⟩
-    have : (n / m) < n := by
-      apply Nat.div_lt_self
-      . linarith
-      . linarith
-    have := ih (n / m) this h1 nmp
-    rcases this with ⟨p, pp, pdvdnm, h⟩
     use p
-    have : p ∣ n := by
-      apply dvd_of_mul_left_dvd
-      exact (Nat.dvd_div_iff_mul_dvd mdvdn).mp pdvdnm
-    exact ⟨pp, this, h⟩
+  . obtain ⟨nmdvdn, nmltn⟩ := aux mdvdn mge2 mltn
+    by_cases nmp : (n / m).Prime
+    . use n / m
+    have := ih (n / m) nmltn h1 nmp
+    rcases this with ⟨p, pp, pdvdnm, h⟩
+    have : p ∣ n := dvd_trans pdvdnm nmdvdn
+    use p
 
 example (m n : ℕ) (s : Finset ℕ) (h : m ∈ erase s n) : m ≠ n ∧ m ∈ s := by
   rwa [mem_erase] at h
