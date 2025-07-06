@@ -242,7 +242,7 @@ theorem primes_mod_4_eq_3_infinite : ∀ n, ∃ p > n, Nat.Prime p ∧ p % 4 = 3
   by_contra h
   push_neg at h
   rcases h with ⟨n, hn⟩
-  have : ∃ s : Finset Nat, ∀ p : ℕ, p.Prime ∧ p % 4 = 3 ↔ p ∈ s := by
+  have : ∃ s : Finset ℕ, ∀ p : ℕ, p.Prime ∧ p % 4 = 3 ↔ p ∈ s := by
     apply ex_finset_of_bounded
     use n
     contrapose! hn
@@ -250,16 +250,34 @@ theorem primes_mod_4_eq_3_infinite : ∀ n, ∃ p > n, Nat.Prime p ∧ p % 4 = 3
     exact ⟨p, pltn, pp, p4⟩
   rcases this with ⟨s, hs⟩
   have h₁ : ((4 * ∏ i ∈ erase s 3, i) + 3) % 4 = 3 := by
-    sorry
+    apply Nat.mul_add_mod
   rcases exists_prime_factor_mod_4_eq_3 h₁ with ⟨p, pp, pdvd, p4eq⟩
   have ps : p ∈ s := by
-    sorry
+    apply (hs p).mp
+    constructor <;> assumption
   have pne3 : p ≠ 3 := by
-    sorry
+    by_contra peq3
+    have := (Nat.dvd_add_iff_left (dvd_of_eq peq3)).mpr pdvd
+    rw [Nat.Prime.dvd_mul pp] at this
+    rcases this with h₂ | h₂
+    . rw [peq3] at h₂
+      contradiction
+    have sprime : ∀ x ∈ s.erase 3, x.Prime := by
+      intro x xs
+      rw [mem_erase] at xs
+      apply ((hs x).mpr xs.right).left
+    have := mem_of_dvd_prod_primes pp sprime h₂
+    rw [mem_erase] at this
+    obtain ⟨pneq3, _⟩ := this
+    contradiction
   have : p ∣ 4 * ∏ i ∈ erase s 3, i := by
-    sorry
+    apply dvd_trans _ (dvd_mul_left _ _)
+    apply dvd_prod_of_mem
+    simp
+    constructor <;> assumption
   have : p ∣ 3 := by
-    sorry
+    convert Nat.dvd_sub pdvd this
+    simp
   have : p = 3 := by
-    sorry
+    exact Nat.Prime.eq_of_dvd_of_prime pp Nat.prime_three this
   contradiction
