@@ -179,7 +179,21 @@ end Int
 
 theorem sq_add_sq_eq_zero {α : Type*} [Ring α] [LinearOrder α] [IsStrictOrderedRing α]
     (x y : α) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
-  sorry
+  constructor
+  . intro h
+    contrapose h
+    push_neg
+    rw [not_and_or] at h
+    rcases h with (h | h)
+    . have : 0 < x ^ 2 := pow_two_pos_of_ne_zero h
+      have : 0 < x ^ 2 + y ^ 2 := by apply Right.add_pos_of_pos_of_nonneg this (pow_two_nonneg y)
+      exact Ne.symm (ne_of_lt this)
+    . have : 0 < y ^ 2 := pow_two_pos_of_ne_zero h
+      have : 0 < x ^ 2 + y ^ 2 := by apply Right.add_pos_of_nonneg_of_pos (pow_two_nonneg x) this
+      exact Ne.symm (ne_of_lt this)
+  . rintro ⟨rfl, rfl⟩
+    norm_num
+
 namespace GaussInt
 
 def norm (x : GaussInt) :=
@@ -187,13 +201,34 @@ def norm (x : GaussInt) :=
 
 @[simp]
 theorem norm_nonneg (x : GaussInt) : 0 ≤ norm x := by
-  sorry
+  simp [norm]
+  have : 0 ≤ x.re ^ 2 := sq_nonneg x.re
+  have : 0 ≤ x.im ^ 2 := sq_nonneg x.im
+  linarith
+
 theorem norm_eq_zero (x : GaussInt) : norm x = 0 ↔ x = 0 := by
-  sorry
+  constructor
+  . intro h
+    simp [norm] at h
+    rcases (sq_add_sq_eq_zero x.re x.im).mp h with ⟨rezero, imzero⟩
+    ext <;> assumption
+  . rintro rfl
+    simp [norm]
+
 theorem norm_pos (x : GaussInt) : 0 < norm x ↔ x ≠ 0 := by
-  sorry
+  constructor
+  . intro h
+    rintro rfl
+    simp [norm] at h
+  . intro h
+    contrapose! h
+    rw [← norm_eq_zero x]
+    linarith [norm_nonneg x]
+
 theorem norm_mul (x y : GaussInt) : norm (x * y) = norm x * norm y := by
-  sorry
+  simp [norm]
+  ring
+
 def conj (x : GaussInt) : GaussInt :=
   ⟨x.re, -x.im⟩
 
