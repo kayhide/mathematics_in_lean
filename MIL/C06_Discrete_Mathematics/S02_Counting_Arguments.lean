@@ -91,17 +91,51 @@ example (n : ℕ) : #(triangle n) = (n + 1) * n / 2 := by
   let turn (p : ℕ × ℕ) : ℕ × ℕ := (n - 1 - p.1, n - p.2)
   calc 2 * #(triangle n)
       = #(triangle n) + #(triangle n) := by
-          sorry
+        ring
     _ = #(triangle n) + #(triangle n |>.image turn) := by
-          sorry
+        rw [Finset.card_image_of_injOn]
+        rintro ⟨x₁, y₁⟩ h₁ ⟨x₂, y₂⟩ h₂
+        simp [turn, triangle] at *
+        omega
     _ = #(range n ×ˢ range (n + 1)) := by
-          sorry
+        rw [← Finset.card_union_of_disjoint]
+        swap
+        . rw [Finset.disjoint_iff_ne]
+          rintro ⟨x₁, y₁⟩ h₁ ⟨x₂, y₂⟩ h₂
+          simp [turn, triangle] at *
+          omega
+        . congr
+          ext p
+          rcases p with ⟨x, y⟩
+          simp [turn, triangle]
+          constructor
+          . rintro (h | h) <;> omega
+          . rcases Nat.lt_or_ge x y with h | h
+            . omega
+            . rintro ⟨h₁, h₂⟩
+              right
+              use n - 1 - x, n - y
+              omega
     _ = (n + 1) * n := by
-          sorry
+        simp
+        ring
 
 def triangle' (n : ℕ) : Finset (ℕ × ℕ) := {p ∈ range n ×ˢ range n | p.1 ≤ p.2}
 
-example (n : ℕ) : #(triangle' n) = #(triangle n) := by sorry
+example (n : ℕ) : #(triangle' n) = #(triangle n) := by
+  let f (p : ℕ × ℕ) : ℕ × ℕ := (p.1, p.2 + 1)
+  have : triangle n = (triangle' n |>.image f) := by
+    ext p
+    rcases p with ⟨p1, p2⟩
+    simp [triangle, triangle', f]
+    constructor
+    . intro _
+      use p1, (p2 - 1)
+      omega
+    . omega
+  rw [this, card_image_of_injOn]
+  rintro ⟨p1, p2⟩ _ ⟨q1, q2⟩ _
+  simp [f]
 
 section
 open Classical
@@ -129,8 +163,14 @@ example {n : ℕ} (A : Finset ℕ)
     ∃ m ∈ A, ∃ k ∈ A, Nat.Coprime m k := by
   have : ∃ t ∈ range n, 1 < #({u ∈ A | u / 2 = t}) := by
     apply exists_lt_card_fiber_of_mul_lt_card_of_maps_to
-    · sorry
-    · sorry
+    · intro x xinA
+      simp
+      apply Nat.div_lt_of_lt_mul
+      apply List.mem_range.mp (hA' xinA)
+    · simp [hA]
   rcases this with ⟨t, ht, ht'⟩
   simp only [one_lt_card, mem_filter] at ht'
-  sorry
+  rcases ht' with ⟨x, ⟨⟨xinA, x2t⟩, ⟨y, ⟨⟨yinA, y2t⟩, xney⟩⟩⟩⟩
+  use x, xinA, y, yinA
+  have : x = y + 1 ∨ y = x + 1 := by omega
+  rcases this with rfl | rfl <;> simp
