@@ -61,12 +61,24 @@ theorem map_map' (f : α → β) (g : β → γ) (as : List α) :
   . rfl
   . simp [map, ih]
 
-def reverse : List α → List α := sorry
+def reverse : List α → List α
+  | [] => []
+  | x :: xs => reverse xs ++ [x]
 
 theorem reverse_append (as bs : List α) : reverse (as ++ bs) = reverse bs ++ reverse as := by
-  sorry
+  match as with
+  | [] =>
+      rw [nil_append, reverse, append_nil]
+  | a :: as =>
+      rw [cons_append, reverse, reverse_append as bs, reverse, append_assoc]
 
-theorem reverse_reverse (as : List α) : reverse (reverse as) = as := by sorry
+theorem reverse_reverse (as : List α) : reverse (reverse as) = as := by
+  match as with
+  | [] =>
+      simp [reverse]
+  | a :: as =>
+      rw [reverse, reverse_append, reverse_reverse as]
+      simp [reverse]
 
 end MyListSpace3
 
@@ -97,14 +109,32 @@ theorem size_le : ∀ t : BinTree, size t ≤ 2^depth t - 1
           have : 0 < 2 ^ max l.depth r.depth := by simp
           omega
 
-theorem depth_le_size : ∀ t : BinTree, depth t ≤ size t := by sorry
+theorem depth_le_size : ∀ t : BinTree, depth t ≤ size t := by
+  intro t
+  match t with
+  | empty =>
+    rw [size, depth]
+  | node l r =>
+    simp [size, depth]
+    have : l.depth ≤ l.size := depth_le_size _
+    have : r.depth ≤ r.size := depth_le_size _
+    constructor <;> linarith
 
-def flip : BinTree → BinTree := sorry
+def flip : BinTree → BinTree
+  | empty => empty
+  | node l r => node (flip r) (flip l)
 
 example: flip  (node (node empty (node empty empty)) (node empty empty)) =
-    node (node empty empty) (node (node empty empty) empty) := sorry
+    node (node empty empty) (node (node empty empty) empty) := rfl
 
-theorem size_flip : ∀ t, size (flip t) = size t := by sorry
+theorem size_flip : ∀ t, size (flip t) = size t := by
+  intro t
+  match t with
+  | empty => rfl
+  | node l r =>
+    simp [size, flip, size_flip l, size_flip r]
+    ring
+
 end BinTree
 
 inductive PropForm : Type where
@@ -152,9 +182,34 @@ def subst : PropForm → ℕ → PropForm → PropForm
   | impl A B, m, C => impl (A.subst m C) (B.subst m C)
 
 theorem subst_eq_of_not_mem_vars :
-    ∀ (A : PropForm) (n : ℕ) (C : PropForm), n ∉ A.vars → A.subst n C = A := sorry
+    ∀ (A : PropForm) (n : ℕ) (C : PropForm), n ∉ A.vars → A.subst n C = A := by
+  intro A n C h
+  match A with
+  | var m =>
+      simp_all [vars, subst]
+      rintro rfl
+      contradiction
+  | fls    => rfl
+  | conj A B =>
+      simp_all [vars, subst, fun A => subst_eq_of_not_mem_vars A]
+  | disj A B =>
+      simp_all [vars, subst, fun A => subst_eq_of_not_mem_vars A]
+  | impl A B =>
+      simp_all [vars, subst, fun A => subst_eq_of_not_mem_vars A]
 
 theorem subst_eval_eq : ∀ (A : PropForm) (n : ℕ) (C : PropForm) (v : ℕ → Bool),
-  (A.subst n C).eval v = A.eval (fun m => if m = n then C.eval v else v m) := sorry
+  (A.subst n C).eval v = A.eval (fun m => if m = n then C.eval v else v m) := by
+  intro A n C v
+  match A with
+  | var m =>
+      simp_all [eval, subst]
+      split <;> tauto
+  | fls => rfl
+  | conj A B =>
+      simp [eval, subst, fun A => subst_eval_eq A]
+  | disj A B =>
+      simp [eval, subst, fun A => subst_eval_eq A]
+  | impl A B =>
+      simp [eval, subst, fun A => subst_eval_eq A]
 
 end PropForm
