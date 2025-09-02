@@ -119,13 +119,21 @@ example {M : Type} [Monoid₁ M] {a b c : M} (hba : b ⋄ a = 𝟙) (hac : a ⋄
 
 
 lemma inv_eq_of_dia [Group₁ G] {a b : G} (h : a ⋄ b = 𝟙) : a⁻¹ = b :=
-  sorry
+  calc
+    a⁻¹ = a⁻¹ ⋄ 𝟙 := by rw [dia_one]
+    _ = a⁻¹ ⋄ (a ⋄ b) := by rw [h]
+    _ = a⁻¹ ⋄ a ⋄ b := by rw [dia_assoc]
+    _ = 𝟙 ⋄ b := by rw [inv_dia]
+    _ = b := by rw [one_dia]
 
 lemma dia_inv [Group₁ G] (a : G) : a ⋄ a⁻¹ = 𝟙 :=
-  sorry
-
-
-
+  calc
+    a ⋄ a⁻¹ = 𝟙 ⋄ (a ⋄ a⁻¹) := by rw [one_dia]
+    _ = (a⁻¹)⁻¹ ⋄ a⁻¹ ⋄ (a ⋄ a⁻¹) := by rw [inv_dia]
+    _ = (a⁻¹)⁻¹ ⋄ ((a⁻¹ ⋄ a) ⋄ a⁻¹) := by rw [dia_assoc, dia_assoc]
+    _ = (a⁻¹)⁻¹ ⋄ (𝟙 ⋄ a⁻¹) := by rw [inv_dia]
+    _ = (a⁻¹)⁻¹ ⋄ a⁻¹ := by rw [one_dia]
+    _ = 𝟙 := by rw [inv_dia]
 
 class AddSemigroup₃ (α : Type) extends Add α where
   /-- Addition is associative -/
@@ -177,20 +185,39 @@ attribute [simp] Group₃.inv_mul AddGroup₃.neg_add
 
 @[to_additive]
 lemma inv_eq_of_mul [Group₃ G] {a b : G} (h : a * b = 1) : a⁻¹ = b :=
-  sorry
-
+  calc
+    a⁻¹ = a⁻¹ * 1 := by rw [mul_one]
+    _ = a⁻¹ * (a * b) := by rw [h]
+    _ = a⁻¹ * a * b := by rw [mul_assoc₃]
+    _ = 1 * b := by rw [Group₃.inv_mul]
+    _ = b := by rw [one_mul]
 
 @[to_additive (attr := simp)]
-lemma Group₃.mul_inv {G : Type} [Group₃ G] {a : G} : a * a⁻¹ = 1 := by
-  sorry
+lemma Group₃.mul_inv {G : Type} [Group₃ G] {a : G} : a * a⁻¹ = 1 :=
+  calc
+    a * a⁻¹ = 1 * (a * a⁻¹) := by rw [one_mul]
+    _ = (a⁻¹)⁻¹ * a⁻¹ * (a * a⁻¹) := by rw [inv_mul]
+    _ = (a⁻¹)⁻¹ * ((a⁻¹ * a) * a⁻¹) := by rw [mul_assoc₃, mul_assoc₃]
+    _ = (a⁻¹)⁻¹ * (1 * a⁻¹) := by rw [inv_mul]
+    _ = (a⁻¹)⁻¹ * a⁻¹ := by rw [one_mul]
+    _ = 1 := by rw [inv_mul]
 
 @[to_additive]
-lemma mul_left_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : a * b = a * c) : b = c := by
-  sorry
+lemma mul_left_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : a * b = a * c) : b = c :=
+  calc
+    b = 1 * b := by rw [one_mul]
+    _ = a⁻¹ * a * b := by rw [Group₃.inv_mul]
+    _ = a⁻¹ * a * c := by rw [mul_assoc₃, h, mul_assoc₃]
+    _ = c := by rw [Group₃.inv_mul, one_mul]
 
 @[to_additive]
-lemma mul_right_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : b*a = c*a) : b = c := by
-  sorry
+lemma mul_right_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : b*a = c*a) : b = c :=
+  calc
+    b = b * 1 := by rw [mul_one]
+    _ = b * (a * a⁻¹) := by rw [Group₃.mul_inv]
+    _ = b * a * a⁻¹ := by rw [mul_assoc₃]
+    _ = c * a * a⁻¹ := by rw [h]
+    _ = c := by rw [mul_assoc₃, Group₃.mul_inv, mul_one]
 
 class AddCommGroup₃ (G : Type) extends AddGroup₃ G, AddCommMonoid₃ G
 
@@ -207,7 +234,19 @@ class Ring₃ (R : Type) extends AddGroup₃ R, Monoid₃ R, MulZeroClass R wher
 
 instance {R : Type} [Ring₃ R] : AddCommGroup₃ R :=
 { add_comm := by
-    sorry }
+    intro a b
+    have : a + (a + b) + b = a + (b + a) + b :=
+      calc
+        a + (a + b) + b = (a + a) + (b + b) := by simp [add_assoc₃]
+        _ = (1 + 1) * a + (1 + 1) * b := by simp [Ring₃.right_distrib]
+        _ = (1 + 1) * (a + b) := by simp [Ring₃.left_distrib]
+        _ = 1 * (a + b) + 1 * (a + b) := by simp [Ring₃.right_distrib]
+        _ = (a + b) + (a + b) := by simp
+        _ = a + (b + a) + b := by simp [add_assoc₃]
+    apply add_left_cancel₃
+    apply add_right_cancel₃
+    exact this
+}
 
 instance : Ring₃ ℤ where
   add := (· + ·)
@@ -233,13 +272,28 @@ class LE₁ (α : Type) where
 
 @[inherit_doc] infix:50 " ≤₁ " => LE₁.le
 
-class Preorder₁ (α : Type)
+class Preorder₁ (α : Type) extends LE₁ α where
+  le_refl (a : α) : a ≤₁ a
+  le_trans {a b c : α} : a ≤₁ b → b ≤₁ c → a ≤₁ c
 
-class PartialOrder₁ (α : Type)
+class PartialOrder₁ (α : Type) extends Preorder₁ α where
+  le_antisym {a b : α} : a ≤₁ b → b ≤₁ a → a = b
 
 class OrderedCommMonoid₁ (α : Type)
+  extends PartialOrder₁ α, CommMonoid₃ α where
+  mul_of_le : ∀ a b : α, a ≤₁ b → ∀ c : α, c * a ≤₁ c * b
+
 
 instance : OrderedCommMonoid₁ ℕ where
+  le := (· ≤ ·)
+  le_refl := Nat.le_refl
+  le_trans := Nat.le_trans
+  le_antisym := Nat.le_antisymm
+  mul_assoc₃ := Nat.mul_assoc
+  mul_comm := Nat.mul_comm
+  mul_of_le := by
+    intro a b h c
+    exact Nat.mul_le_mul_left c h
 
 class SMul₃ (α : Type) (β : Type) where
   /-- Scalar multiplication -/
@@ -267,17 +321,176 @@ def nsmul₁ {M : Type*} [Zero M] [Add M] : ℕ → M → M
   | 0, _ => 0
   | n + 1, a => a + nsmul₁ n a
 
+def nsmul_distrib {A: Type} [AddCommGroup₃ A] :
+  ∀ a b : ℕ, ∀ m : A, nsmul₁ (a + b) m = nsmul₁ a m + nsmul₁ b m := by
+  intro a b m
+  induction' b with b ih
+  . simp [nsmul₁]
+  . simp [nsmul₁]
+    rw [ih]
+    rw [← add_assoc₃]
+    rw [AddCommGroup₃.add_comm m, add_assoc₃]
+
+
 def zsmul₁ {M : Type*} [Zero M] [Add M] [Neg M] : ℤ → M → M
   | Int.ofNat n, a => nsmul₁ n a
   | Int.negSucc n, a => -nsmul₁ n.succ a
 
+def neg_distrib {M : Type} [AddCommGroup₃ M] :
+  ∀ m n : M, -(m + n) = -m + -n := by
+  intro m n
+  calc
+    -(m + n) = -(m + n) + 0 + 0 := by nth_rw 1 [add_zero (-(m + n)), add_zero (-(m + n))]
+    _ = -(m + n) + (-m + m) + (-n + n) := by nth_rw 1 [AddGroup₃.neg_add m, AddGroup₃.neg_add n]
+    _ = -(m + n) + (m + -m) + (n + -n) := by rw [AddCommGroup₃.add_comm (-m) m, AddCommGroup₃.add_comm (-n) n]
+    _ = -(m + n) + (m + -m + n + -n) := by repeat rw [add_assoc₃]
+    _ = -(m + n) + (m + (-m + n) + -n) := by repeat rw [add_assoc₃]
+    _ = -(m + n) + (m + (n + -m) + -n) := by rw [AddCommGroup₃.add_comm (-m) n]
+    _ = -(m + n) + (m + n) + -m + -n := by repeat rw [add_assoc₃]
+    _ = 0 + -m + -n := by rw [AddGroup₃.neg_add (m + n)]
+    _ = -m + -n := by rw [zero_add]
+
+@[simp]
+def neg_neg₃ {M : Type} [AddCommGroup₃ M] :
+  ∀ m : M, - -m = m := by
+    intro m
+    calc
+      - -m = - -m + (-m + m) := by simp
+      _ = (- -m + -m) + m := by rw [add_assoc₃]
+      _ = m := by simp
+
+@[simp]
+def neg_zero₃ {A : Type} [AddCommGroup₃ A] :
+  -(0 : A) = 0 := by
+    rw [← add_zero (-0), AddGroup₃.neg_add]
+
+@[simp]
+def zero_zsmul₁ {A : Type} [AddCommGroup₃ A] :
+  ∀ m : A, zsmul₁ 0 m = 0 := by simp [zsmul₁, nsmul₁]
+
+@[simp]
+def one_zsmul₁ {A : Type} [AddCommGroup₃ A] :
+  ∀ m : A, zsmul₁ 1 m = m := by simp [zsmul₁, nsmul₁]
+
+@[simp]
+def neg_one_zsmul₁ {A : Type} [AddCommGroup₃ A] :
+  ∀ m : A, zsmul₁ (-1) m = -m := by
+  intro m
+  have : (-1) = Int.negSucc 0 := rfl
+  rw [this]
+  simp [zsmul₁, nsmul₁]
+
+@[simp]
+def neg_zsmul₁ {A : Type} [AddCommGroup₃ A] :
+  ∀ a : ℤ, ∀ m : A, zsmul₁ (-a) m = -zsmul₁ a m := by
+  intro a m
+  match a with
+  | 0 => simp
+  | Int.ofNat (Nat.succ n) =>
+      have : -Int.ofNat n.succ = Int.negSucc n := rfl
+      rw [this]
+      simp [zsmul₁]
+  | Int.negSucc n =>
+      have : -Int.negSucc n = Int.ofNat n.succ := rfl
+      rw [this]
+      simp [zsmul₁]
+
+def zsmul_add_one {A : Type} [AddCommGroup₃ A] :
+  ∀ a : ℤ, ∀ m : A, zsmul₁ (a + 1) m = zsmul₁ a m + m := by
+  intro a m
+  match a with
+  | 0 => simp [zsmul₁, nsmul₁]
+  | Int.ofNat (Nat.succ n) =>
+      have : Int.ofNat (n.succ) + 1 = Int.ofNat (n.succ.succ) := rfl
+      rw [this]
+      simp only [zsmul₁, nsmul₁]
+      rw [AddCommGroup₃.add_comm]
+  | Int.negSucc n =>
+      match n with
+      | 0 => simp [zsmul₁, nsmul₁]
+      | n + 1 =>
+          have : Int.negSucc (n + 1) + 1 = Int.negSucc n := rfl
+          rw [this]
+          simp only [zsmul₁, nsmul₁]
+          nth_rw 2 [neg_distrib]
+          rw [AddCommGroup₃.add_comm (-m)]
+          rw [add_assoc₃]
+          rw [AddGroup₃.neg_add m]
+          simp
+
+def zsmul_sub_one {A : Type} [AddCommGroup₃ A] :
+  ∀ a : ℤ, ∀ m : A, zsmul₁ (a + -1) m = zsmul₁ a m + -m := by
+  intro a m
+  match a with
+  | 0 => simp
+  | Int.ofNat (Nat.succ n) =>
+      have : Int.ofNat n.succ + -1 = Int.ofNat n := by simp
+      rw [this]
+      simp [zsmul₁, zsmul_add_one, nsmul₁]
+      rw [AddCommGroup₃.add_comm m, add_assoc₃]
+      simp
+  | Int.negSucc n =>
+      have : Int.negSucc n + -1 = Int.negSucc n.succ := rfl
+      rw [this]
+      simp [zsmul₁, nsmul₁, neg_distrib, add_assoc₃, AddCommGroup₃.add_comm]
+
+def zsmul_distrib {A : Type} [AddCommGroup₃ A] :
+  ∀ a b : ℤ, ∀ m : A, zsmul₁ (a + b) m = zsmul₁ a m + zsmul₁ b m := by
+  intro a b m
+  induction' b with b ih b ih
+  . simp [zsmul₁, nsmul₁]
+  . rw [← Int.add_assoc]
+    repeat rw [zsmul_add_one]
+    rw [ih]
+    rw [add_assoc₃]
+  . rw [← Int.add_neg_eq_sub]
+    rw [← Int.add_assoc]
+    repeat rw [zsmul_sub_one]
+    simp at *
+    rw [ih]
+    rw [add_assoc₃]
+
 instance abGrpModule (A : Type) [AddCommGroup₃ A] : Module₁ ℤ A where
   smul := zsmul₁
-  zero_smul := sorry
-  one_smul := sorry
-  mul_smul := sorry
-  add_smul := sorry
-  smul_add := sorry
+  zero_smul := by simp [zsmul₁, nsmul₁]
+  one_smul := by simp [zsmul₁, nsmul₁]
+  mul_smul := by
+    intro a b m
+    induction' a with a ih a ih
+    . simp [zsmul₁, nsmul₁]
+    . rw [right_distrib]
+      simp[zsmul_distrib]
+      rw [ih]
+    . rw [← Int.add_neg_eq_sub]
+      rw [right_distrib]
+      simp [zsmul_distrib]
+      simp at ih
+      rw [ih]
+  add_smul := by
+    intros a b m
+    induction' b with b ih b ih
+    . simp [zsmul₁, nsmul₁]
+    . rw [← Int.add_assoc]
+      simp [zsmul_add_one, zsmul_distrib, add_assoc₃]
+    . rw [← Int.add_neg_eq_sub]
+      rw [← Int.add_assoc]
+      simp [zsmul_add_one, zsmul_distrib, add_assoc₃]
+  smul_add := by
+    intros a m n
+    induction' a with a ih a ih
+    . simp [zsmul₁, nsmul₁]
+    . simp [zsmul_add_one]
+      rw [ih]
+      repeat rw [add_assoc₃]
+      rw [← add_assoc₃ m _ n, AddCommGroup₃.add_comm m (zsmul₁ a n)]
+      repeat rw [add_assoc₃]
+    . rw [← Int.add_neg_eq_sub]
+      simp [zsmul_sub_one]
+      simp at ih
+      rw [ih]
+      repeat rw [add_assoc₃]
+      rw [neg_distrib, ← add_assoc₃ (-m) _ (-n), AddCommGroup₃.add_comm (-m) (-zsmul₁ a n)]
+      repeat rw [add_assoc₃]
 
 #synth Module₁ ℤ ℤ -- abGrpModule ℤ
 
@@ -311,4 +524,3 @@ instance : AddMonoid₄ ℤ where
     by rw [Int.add_mul, Int.add_comm, Int.one_mul]
 
 example (n : ℕ) (m : ℤ) : SMul.smul (self := mySMul) n m = n * m := rfl
-
