@@ -82,21 +82,28 @@ open Ideal Quotient Function
 
 /-- The homomorphism from ``R ⧸ ⨅ i, I i`` to ``Π i, R ⧸ I i`` featured in the Chinese
   Remainder Theorem. -/
+-- def chineseMap (I : ι → Ideal R) : (R ⧸ ⨅ i, I i) →+* Π i, R ⧸ I i := by
+--   set J : Ideal R := ⨅ i, I i
+--   set f : R →+* Π i, R ⧸ I i := Pi.ringHom (fun i ↦ Ideal.Quotient.mk (I i))
+--   set H : J ≤ RingHom.ker f := by rw [ker_Pi_Quotient_mk]
+--   exact Ideal.Quotient.lift J f H
 def chineseMap (I : ι → Ideal R) : (R ⧸ ⨅ i, I i) →+* Π i, R ⧸ I i :=
-  sorry
+  Ideal.Quotient.lift (⨅ i, I i) (Pi.ringHom fun i ↦ mk (I i)) (by
+    simp [← RingHom.mem_ker, ker_Pi_Quotient_mk]
+    )
 
 lemma chineseMap_mk (I : ι → Ideal R) (x : R) :
     chineseMap I (Quotient.mk _ x) = fun i : ι ↦ Ideal.Quotient.mk (I i) x :=
-  sorry
+  rfl
 
 lemma chineseMap_mk' (I : ι → Ideal R) (x : R) (i : ι) :
     chineseMap I (mk _ x) i = mk (I i) x :=
-  sorry
+  rfl
 
 #check injective_lift_iff
 
 lemma chineseMap_inj (I : ι → Ideal R) : Injective (chineseMap I) := by
-  sorry
+  rw [chineseMap, injective_lift_iff, ker_Pi_Quotient_mk]
 
 #check IsCoprime
 #check isCoprime_iff_add
@@ -118,10 +125,18 @@ theorem isCoprime_Inf {I : Ideal R} {J : ι → Ideal R} {s : Finset ι}
       rw [Finset.iInf_insert, inf_comm, one_eq_top, eq_top_iff, ← one_eq_top]
       set K := ⨅ j ∈ s, J j
       calc
-        1 = I + K                  := sorry
-        _ = I + K * (I + J i)      := sorry
-        _ = (1 + K) * I + K * J i  := sorry
-        _ ≤ I + K ⊓ J i            := sorry
+        1 = I + K                  := by
+          rcases (Finset.forall_mem_insert i s _).mp hf with ⟨_, h⟩
+          rw [hs h]
+        _ = I + K * (I + J i)      := by
+          have : I + J i = 1 := hf i (by simp [Finset.mem_insert_self])
+          rw [this, mul_one]
+        _ = (1 + K) * I + K * J i  := by ring
+        _ ≤ I + K ⊓ J i            := by
+          gcongr
+          . exact mul_le_left
+          . exact mul_le_inf
+
 lemma chineseMap_surj [Fintype ι] {I : ι → Ideal R}
     (hI : ∀ i j, i ≠ j → IsCoprime (I i) (I j)) : Surjective (chineseMap I) := by
   classical
@@ -130,11 +145,28 @@ lemma chineseMap_surj [Fintype ι] {I : ι → Ideal R}
   have key : ∀ i, ∃ e : R, mk (I i) e = 1 ∧ ∀ j, j ≠ i → mk (I j) e = 0 := by
     intro i
     have hI' : ∀ j ∈ ({i} : Finset ι)ᶜ, IsCoprime (I i) (I j) := by
-      sorry
-    sorry
+      intro j hj
+      apply hI i j
+      simp at hj
+      rwa [ne_comm]
+    rcases isCoprime_iff_exists.mp (isCoprime_Inf hI') with ⟨x, hx, y, hy, hxy⟩
+    use y
+    constructor
+    . -- have : y = 1 - x := eq_sub_of_add_eq' hxy
+      rw [eq_sub_of_add_eq' hxy]
+      simp
+      rwa [eq_zero_iff_mem.mpr]
+    . simp at hy
+      intro j hj
+      rw [eq_zero_iff_mem.mpr]
+      exact hy j hj
   choose e he using key
   use mk _ (∑ i, f i * e i)
-  sorry
+  ext i
+  rw [chineseMap_mk', map_sum, Fintype.sum_eq_single i]
+  . simp [(he i).1, hf i]
+  . intro j hj
+    simp [(he j).2 i hj.symm]
 
 noncomputable def chineseIso [Fintype ι] (f : ι → Ideal R)
     (hf : ∀ i j, i ≠ j → IsCoprime (f i) (f j)) : (R ⧸ ⨅ i, f i) ≃+* Π i, R ⧸ f i :=
