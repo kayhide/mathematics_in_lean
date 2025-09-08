@@ -32,7 +32,15 @@ example (φ : End K V) : aeval φ (X : K[X]) = φ :=
 #check LinearMap.mem_ker
 
 example (P Q : K[X]) (h : IsCoprime P Q) (φ : End K V) : ker (aeval φ P) ⊓ ker (aeval φ Q) = ⊥ := by
-  sorry
+  rw [Submodule.eq_bot_iff]
+  intro x
+  rw [Submodule.mem_inf]
+  repeat rw [LinearMap.mem_ker]
+  intro hx
+  rcases h with ⟨U, V, hUV⟩
+  have : aeval φ (1 : K[X]) x = aeval φ (U * P + V * Q) x := by rw [hUV]
+  simp at this
+  simpa [hx]
 
 #check Submodule.add_mem_sup
 #check map_mul
@@ -41,7 +49,35 @@ example (P Q : K[X]) (h : IsCoprime P Q) (φ : End K V) : ker (aeval φ P) ⊓ k
 
 example (P Q : K[X]) (h : IsCoprime P Q) (φ : End K V) :
     ker (aeval φ P) ⊔ ker (aeval φ Q) = ker (aeval φ (P*Q)) := by
-  sorry
+  apply le_antisymm
+  . apply sup_le
+    . rw [mul_comm, map_mul]
+      apply LinearMap.ker_le_ker_comp
+    . rw [map_mul]
+      apply LinearMap.ker_le_ker_comp
+  . intro x hx
+    rcases h with ⟨U, V, hUV⟩
+    have : x = (aeval φ (U * P) + aeval φ (V * Q)) x := by
+      calc
+        x = aeval φ (1 : K[X]) x := by simp
+        _ = aeval φ (U * P + V * Q) x := by simp [hUV]
+        _ = (aeval φ (U * P) + aeval φ (V * Q)) x := by simp
+    rw [this, add_comm]
+    rw [mem_ker] at hx
+    apply Submodule.add_mem_sup
+    . rw [mem_ker]
+      rw [← mul_apply, ← map_mul]
+      have : P * (V * Q) = V * (P * Q) := by ring
+      rw [this]
+      rw [map_mul, mul_apply, hx]
+      simp
+    . rw [mem_ker]
+      rw [← mul_apply, ← map_mul]
+      have : Q * (U * P) = U * (P * Q) := by ring
+      rw [this]
+      rw [map_mul, mul_apply, hx]
+      simp
+
 example (φ : End K V) (a : K) : φ.eigenspace a = LinearMap.ker (φ - a • 1) :=
   End.eigenspace_def
 
@@ -68,4 +104,3 @@ example [FiniteDimensional K V] (φ : End K V) (a : K) :
 -- Cayley-Hamilton
 example [FiniteDimensional K V] (φ : End K V) : aeval φ φ.charpoly = 0 :=
   φ.aeval_self_charpoly
-
