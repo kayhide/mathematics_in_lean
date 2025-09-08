@@ -35,11 +35,15 @@ def preimage {W : Type*} [AddCommGroup W] [Module K W] (φ : V →ₗ[K] W) (H :
     Submodule K V where
   carrier := φ ⁻¹' H
   zero_mem' := by
-    sorry
+    simp
   add_mem' := by
-    sorry
+    intro a b
+    simp
+    exact add_mem
   smul_mem' := by
-    sorry
+    intro c x
+    simp
+    exact SMulMemClass.smul_mem c
 
 example (U : Submodule K V) : Module K U := inferInstance
 
@@ -100,13 +104,23 @@ example {S T : Submodule K V} {x : V} (h : x ∈ S ⊔ T) :
   rw [← S.span_eq, ← T.span_eq, ← Submodule.span_union] at h
   induction h using Submodule.span_induction with
   | mem y h =>
-      sorry
+      rcases h with h | h
+      . use y, h, 0, T.zero_mem
+        module
+      . use 0, S.zero_mem, y, h
+        module
   | zero =>
-      sorry
+      use 0, S.zero_mem, 0, T.zero_mem
+      module
   | add x y hx hy hx' hy' =>
-      sorry
+      rcases hx' with ⟨xs, hxs, xt, hxt, rfl⟩
+      rcases hy' with ⟨ys, hys, yt, hyt, rfl⟩
+      use xs + ys, S.add_mem hxs hys, xt + yt, T.add_mem hxt hyt
+      module
   | smul a x hx hx' =>
-      sorry
+      rcases hx' with ⟨xs, hxs, xt, hxt, rfl⟩
+      use a • xs, S.smul_mem a hxs, a • xt, T.smul_mem a hxt
+      module
 
 section
 
@@ -136,7 +150,12 @@ example : Surjective φ ↔ range φ = ⊤ := range_eq_top.symm
 
 example (E : Submodule K V) (F : Submodule K W) :
     Submodule.map φ E ≤ F ↔ E ≤ Submodule.comap φ F := by
-  sorry
+  constructor
+  . intro h x hx
+    apply h
+    use x, hx
+  . rintro h _ ⟨e, he, rfl⟩
+    apply h he
 
 variable (E : Submodule K V)
 
@@ -161,7 +180,15 @@ open Submodule
 #check Submodule.comap_map_eq
 
 example : Submodule K (V ⧸ E) ≃ { F : Submodule K V // E ≤ F } where
-  toFun := sorry
-  invFun := sorry
-  left_inv := sorry
-  right_inv := sorry
+  toFun F := ⟨comap E.mkQ F, le_comap_mkQ E F⟩
+  invFun P := map E.mkQ P
+  left_inv P := by
+    simp
+    rw [P.map_comap_eq, E.range_mkQ]
+    apply top_inf_eq
+  right_inv F := by
+    ext
+    dsimp
+    rw [Submodule.comap_map_eq, E.ker_mkQ]
+    rw [sup_of_le_left]
+    exact F.2
